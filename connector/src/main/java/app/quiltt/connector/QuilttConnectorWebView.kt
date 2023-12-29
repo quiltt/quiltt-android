@@ -12,20 +12,17 @@ import android.webkit.WebViewClient
 
 class QuilttConnectorWebView(context: Context) : WebView(context) {
     init {
-        println("QuilttConnectorWebView init")
-        println(context)
         visibility = View.VISIBLE
         layoutParams = LayoutParams(MATCH_PARENT, MATCH_PARENT)
         this.settings.javaScriptEnabled = true
         this.settings.domStorageEnabled = true
-//        TODO: Test on real device, might not need this/
-//        this.settings.builtInZoomControls = false
     }
 
     fun load(
         token: String?,
         config: QuilttConnectorConfiguration,
         onEvent: ConnectorSDKOnEventCallback? = null,
+        onExit: ConnectorSDKOnEventExitCallback? = null,
         onExitSuccess: ConnectorSDKOnExitSuccessCallback? = null,
         onExitAbort: ConnectorSDKOnExitAbortCallback? = null,
         onExitError: ConnectorSDKOnExitErrorCallback? = null
@@ -36,6 +33,7 @@ class QuilttConnectorWebView(context: Context) : WebView(context) {
             config = config,
             token = token,
             onEvent = onEvent,
+            onExit = onExit,
             onExitSuccess = onExitSuccess,
             onExitAbort = onExitAbort,
             onExitError = onExitError
@@ -52,6 +50,7 @@ data class QuilttConnectorWebViewClientParams(
     val config: QuilttConnectorConfiguration,
     val token: String?,
     val onEvent: ConnectorSDKOnEventCallback? = null,
+    val onExit: ConnectorSDKOnEventExitCallback? = null,
     val onExitSuccess: ConnectorSDKOnExitSuccessCallback? = null,
     val onExitAbort: ConnectorSDKOnExitAbortCallback? = null,
     val onExitError: ConnectorSDKOnExitErrorCallback? = null
@@ -84,15 +83,18 @@ class QuilttConnectorWebViewClient(private val params: QuilttConnectorWebViewCli
            }
            "ExitAbort" -> {
                clearLocalStorage()
+               params.onExit?.invoke(ConnectorSDKEventType.ExitAbort, ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = null))
                params.onExitAbort?.invoke(ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = null))
            }
            "ExitError" -> {
                clearLocalStorage()
+               params.onExit?.invoke(ConnectorSDKEventType.ExitError, ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = null))
                params.onExitError?.invoke(ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = null))
            }
            "ExitSuccess" -> {
                clearLocalStorage()
                if (connectionId != null) {
+                   params.onExit?.invoke(ConnectorSDKEventType.ExitSuccess, ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = connectionId))
                    params.onExitSuccess?.invoke(ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = connectionId))
                }
            }

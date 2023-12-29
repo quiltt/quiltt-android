@@ -15,22 +15,24 @@ class QuilttConnector(context: Context) {
     fun connect(
         config: QuilttConnectorConnectConfiguration,
         onEvent: ConnectorSDKOnEventCallback? = null,
+        onExit: ConnectorSDKOnEventExitCallback? = null,
         onExitSuccess: ConnectorSDKOnExitSuccessCallback? = null,
         onExitAbort: ConnectorSDKOnExitAbortCallback? = null,
         onExitError: ConnectorSDKOnExitErrorCallback? = null
     ): QuilttConnectorWebView {
-        webView.load(token, config, onEvent, onExitSuccess, onExitAbort, onExitError)
+        webView.load(token, config, onEvent, onExit, onExitSuccess, onExitAbort, onExitError)
         return webView
     }
 
     fun reconnect(
         config: QuilttConnectorReconnectConfiguration,
         onEvent: ConnectorSDKOnEventCallback? = null,
+        onExit: ConnectorSDKOnEventExitCallback? = null,
         onExitSuccess: ConnectorSDKOnExitSuccessCallback? = null,
         onExitAbort: ConnectorSDKOnExitAbortCallback? = null,
         onExitError: ConnectorSDKOnExitErrorCallback? = null
     ): QuilttConnectorWebView {
-        webView.load(token, config, onEvent, onExitSuccess, onExitAbort, onExitError)
+        webView.load(token, config, onEvent, onExit, onExitSuccess, onExitAbort, onExitError)
         return webView
     }
 }
