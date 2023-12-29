@@ -6,8 +6,10 @@ import android.widget.Toast
 import androidx.constraintlayout.widget.ConstraintLayout
 import app.quiltt.connector.QuilttConnector
 import app.quiltt.connector.QuilttConnectorConnectConfiguration
+import app.quiltt.connector.QuilttConnectorWebView
 
 class QuilttConnectorActivity : AppCompatActivity() {
+    private lateinit var webView: QuilttConnectorWebView
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_quiltt_connector)
@@ -18,7 +20,8 @@ class QuilttConnectorActivity : AppCompatActivity() {
         val quilttConnectorConfiguration = QuilttConnectorConnectConfiguration(
             connectorId = "<CONNECTOR_ID>",
             oauthRedirectUrl = "<YOUR_HTTPS_UNIVERSAL_LINK>")
-        val webView = quilttConnector.connect(
+
+        webView = quilttConnector.connect(
             config = quilttConnectorConfiguration,
             onEvent = { eventType, metadata ->
                 println("Event: $eventType")
@@ -46,5 +49,10 @@ class QuilttConnectorActivity : AppCompatActivity() {
             })
 
         connectorLayout.addView(webView)
+    }
+
+    override fun onDestroy() {
+        webView.destroy()
+        super.onDestroy()
     }
 }
