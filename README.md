@@ -1,5 +1,7 @@
 # Quiltt Connector Kotlin SDK
 
+[![app.quiltt:connector](https://img.shields.io/maven-central/v/app.quiltt/connector)](https://search.maven.org/artifact/app.quiltt/connector)
+
 ## Usage
 
 ```kotlin
