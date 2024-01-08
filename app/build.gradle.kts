@@ -46,4 +46,6 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
 
     implementation(project(":connector"))
+//    Enable below to use the published version
+//    implementation("app.quiltt:connector:<VERSION>")
 }
