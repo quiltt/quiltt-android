@@ -2,6 +2,22 @@
 
 [![app.quiltt:connector](https://img.shields.io/maven-central/v/app.quiltt/connector)](https://search.maven.org/artifact/app.quiltt/connector)
 
+## Install
+
+### Maven Central
+
+```gradle
+android {
+    defaultConfig {
+        minSdk = 26 // or greater
+    }
+}
+dependencies {
+    ...
+    implementation("app.quiltt:connector:<INSERT_LATEST_VERSION>")
+}
+```
+
 ## Usage
 
 ```kotlin
