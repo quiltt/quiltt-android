@@ -66,9 +66,8 @@ publishing {
 
                 developers {
                     developer {
-                        id.set("tom-quiltt")
-                        name.set("Tom Lee")
-                        email.set("tom@quiltt.io")
+                        name.set("Quiltt, Inc.")
+                        url.set("https://www.quiltt.io/")
                     }
                 }
 
@@ -87,16 +86,15 @@ publishing {
             name = "OSSRH"
             url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
             credentials {
-                username = System.getenv("OSSRH_USERNAME")
-                password = System.getenv("OSSRH_PASSWORD")
+                val ossrhUsername: String? by project
+                val ossrhPassword: String? by project
+                username = ossrhUsername
+                password = ossrhPassword
             }
         }
     }
 }
 
-// Set the GPG key to sign artifacts with:
-// signing.gnupg.keyName=
-// signing.gnupg.passphrase=
 signing {
     useGpgCmd()
     sign(publishing.publications["connector"])
