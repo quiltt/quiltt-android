@@ -10,6 +10,7 @@ android {
     compileSdk = 33
 
     defaultConfig {
+        // Support down to Android 8.0 (API level 26)
         minSdk = 26
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -79,23 +80,24 @@ publishing {
             }
 
             artifact("$buildDir/outputs/aar/connector-release.aar")
-        } // app.quiltt:quiltt-connector:0.0.0
+        } // app.quiltt:quiltt-connector:VERSION
     }
     repositories {
         maven {
             name = "OSSRH"
             url = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
             credentials {
-                val ossrhUsername: String? by project
-                val ossrhPassword: String? by project
-                username = ossrhUsername
-                password = ossrhPassword
+                username = System.getenv("OSSRH_USERNAME")
+                password = System.getenv("OSSRH_PASSWORD")
             }
         }
     }
 }
 
 signing {
-    useGpgCmd()
+    useInMemoryPgpKeys(
+        System.getenv("SIGNING_KEY_ID"),
+        System.getenv("SIGNING_KEY"),
+        System.getenv("SIGNING_PASSWORD"))
     sign(publishing.publications["connector"])
 }
