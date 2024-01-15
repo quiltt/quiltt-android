@@ -13,6 +13,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Example"
+rootProject.name = "quiltt-android"
 include(":app")
 include(":connector")

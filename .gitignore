@@ -15,9 +15,6 @@
 local.properties
 .vscode
 
-# Ignore Gradle properties file
-gradle.properties
-
 # User-specific configurations
 .idea/caches/
 .idea/libraries/

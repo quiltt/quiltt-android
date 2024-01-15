@@ -10,6 +10,7 @@ android {
     compileSdk = 33
 
     defaultConfig {
+        // Support down to Android 8.0 (API level 26)
         minSdk = 26
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -66,9 +67,8 @@ publishing {
 
                 developers {
                     developer {
-                        id.set("tom-quiltt")
-                        name.set("Tom Lee")
-                        email.set("tom@quiltt.io")
+                        name.set("Quiltt, Inc.")
+                        url.set("https://www.quiltt.io/")
                     }
                 }
 
@@ -80,7 +80,7 @@ publishing {
             }
 
             artifact("$buildDir/outputs/aar/connector-release.aar")
-        } // app.quiltt:quiltt-connector:0.0.0
+        } // app.quiltt:quiltt-connector:VERSION
     }
     repositories {
         maven {
@@ -94,10 +94,10 @@ publishing {
     }
 }
 
-// Set the GPG key to sign artifacts with:
-// signing.gnupg.keyName=
-// signing.gnupg.passphrase=
 signing {
-    useGpgCmd()
+    useInMemoryPgpKeys(
+        System.getenv("SIGNING_KEY_ID"),
+        System.getenv("SIGNING_KEY"),
+        System.getenv("SIGNING_PASSWORD"))
     sign(publishing.publications["connector"])
 }
