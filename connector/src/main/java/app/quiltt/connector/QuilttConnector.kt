@@ -25,7 +25,7 @@ class QuilttConnector(context: Context) {
     }
 
     fun reconnect(
-        config: QuilttConnectorReconnectConfiguratio,
+        config: QuilttConnectorReconnectConfiguration,
         onEvent: ConnectorSDKOnEventCallback? = null,
         onExit: ConnectorSDKOnEventExitCallback? = null,
         onExitSuccess: ConnectorSDKOnExitSuccessCallback? = null,
