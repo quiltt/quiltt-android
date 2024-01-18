@@ -1,0 +1,22 @@
+name: CI
+
+on: push
+
+jobs:
+  build:
+    name: Release build and publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          # Read https://whichjdk.com/#tldr to understand the difference between different distributions
+          # MacOS might be running openjdk 17 (https://whichjdk.com/#apple-silicon) but we want to run the latest LTS on Linux
+          distribution: temurin
+          java-version: 21
+
+      # Generate AAR and POM files
+      - name: Release build
+        run: ./gradlew assembleRelease
