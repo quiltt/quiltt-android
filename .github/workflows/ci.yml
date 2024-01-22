@@ -4,7 +4,7 @@ on: push
 
 jobs:
   build:
-    name: Release build and publish
+    name: CI
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -17,6 +17,15 @@ jobs:
           distribution: temurin
           java-version: 21
 
-      # Generate AAR and POM files
-      - name: Release build
-        run: ./gradlew assembleRelease
+      # Setup Ruby
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3
+
+      # Setup Fastlane
+      - name: Setup Fastlane
+        run: bundle install
+
+      - name: Build AAR and POM files
+        run: bundle exec fastlane build_example_app
