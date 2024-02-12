@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 rootProject.name = "quiltt-android"
 include(":app")
 include(":connector")
+include(":app_jetpack_compose")
