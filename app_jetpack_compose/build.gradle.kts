@@ -18,6 +18,15 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        buildFeatures {
+            buildConfig = true
+        }
+
+        val ingressConnectorId = System.getenv("MOBILE_INGRESS_CONNECTOR_ID")
+        val addConnectorId = System.getenv("MOBILE_ADD_CONNECTOR_ID")
+        buildConfigField("String", "INGRESS_CONNECTOR_ID", "\"$ingressConnectorId\"")
+        buildConfigField("String", "ADD_CONNECTOR_ID", "\"$addConnectorId\"")
     }
 
     buildTypes {
@@ -70,6 +79,8 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
     implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.9")
+    implementation("androidx.browser:browser:1.4.0")
     implementation(project(":connector"))
 //    Enable below to use the published version
 //    implementation("app.quiltt:connector:<VERSION>")

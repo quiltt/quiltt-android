@@ -24,7 +24,8 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="quilttandroidexample"
+                <data
+                    android:scheme="quilttandroidexample"
                     android:host="open.kotlin.app" />
             </intent-filter>
         </activity>

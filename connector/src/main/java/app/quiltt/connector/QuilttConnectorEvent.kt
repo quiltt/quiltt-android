@@ -3,7 +3,8 @@ package app.quiltt.connector
 data class ConnectorSDKCallbackMetadata(
     val connectorId: String,
     val profileId: String?,
-    val connectionId: String?
+    val connectionId: String?,
+    val token: String?
 )
 
 typealias ConnectorSDKOnEventCallback = (ConnectorSDKEventType, ConnectorSDKCallbackMetadata) -> Unit

@@ -16,20 +16,22 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.activity.viewModels
-import androidx.compose.material3.Button
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Text
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.ViewModelProvider
+import app.quiltt.connector.AuthResponse
+import app.quiltt.connector.QuilttAuthApi
+import app.quiltt.connector.QuilttConnector
+import app.quiltt.connector.QuilttConnectorConnectConfiguration
+import kotlinx.coroutines.Dispatchers
 
 class MainActivity : ComponentActivity() {
-    private val viewModel: MainViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val token = SharedPreferencesHelper(context = this).getData("token")
+        val viewModel: MainViewModel by viewModels { MainViewModelFactory(token) }
 
         installSplashScreen().apply {
             setKeepOnScreenCondition {
@@ -38,49 +40,65 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            MainContent()
+            val isValidToken by viewModel.isValidToken.collectAsState()
+            if (isValidToken) {
+                val intent = Intent(this@MainActivity, QuilttHubActivity::class.java)
+                startActivity(intent)
+            } else {
+                IngressConnector()
+            }
         }
     }
 }
 
-class MainViewModel : ViewModel() {
+class MainViewModelFactory(private val token: String?) : ViewModelProvider.NewInstanceFactory() {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T = MainViewModel(token) as T
+}
+
+class MainViewModel(private val token:String?) : ViewModel() {
     private val _loading = MutableStateFlow(true)
+    private val _isValidToken = MutableStateFlow(false)
     val loading = _loading.asStateFlow()
+    val isValidToken = _isValidToken.asStateFlow()
 
     init {
-        viewModelScope.launch {// run background task here
-            delay(2000)
-            _loading.value = false
+        viewModelScope.launch(Dispatchers.IO) {// run background task here
+            if (token != null) {
+                val result = QuilttAuthApi(clientId = null).ping(token = token)
+                if (result is AuthResponse.SessionResponse) {
+                    _isValidToken.value = true
+                    _loading.value = false
+                } else {
+                    _isValidToken.value = false
+                    _loading.value = false
+                }
+            } else {
+                _isValidToken.value = false
+                _loading.value = false
+            }
         }
     }
 }
 
 @Composable
-fun MainContent() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        LaunchConnectorButton()
-    }
-}
-
-@Composable
-fun LaunchConnectorButton() {
+fun IngressConnector() {
     val context = LocalContext.current
-    Button(
-        onClick = {
-            val intent = Intent(context, QuilttConnectorActivity::class.java)
+    val quilttConnector = QuilttConnector(context)
+    val config = QuilttConnectorConnectConfiguration(connectorId = AppConfig.ingressConnectorId)
+    val connectorWebView = quilttConnector.connect(config = config, onExitSuccess = { metadata ->
+        val token: String? = metadata.token
+        if (token != null) {
+            SharedPreferencesHelper(context).saveData("token", token)
+            val intent = Intent(context, QuilttHubActivity::class.java)
             context.startActivity(intent)
-        },
-        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF800080))
-    ) {
-        Text("Launch Connector")
-    }
+            (context as MainActivity).finish()
+        }
+    })
+    AndroidView(factory = { connectorWebView } )
 }
 
 @Preview(showBackground = true)
 @Composable
 fun QuilttHubPreview() {
-    MainContent()
+    IngressConnector()
 }
