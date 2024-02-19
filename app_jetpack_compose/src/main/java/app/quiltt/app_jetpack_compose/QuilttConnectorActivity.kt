@@ -19,7 +19,6 @@ class QuilttConnectorActivity : ComponentActivity() {
         val connectorId = AppConfig.addConnectorId
         val oauthRedirectUrl = AppConfig.oauthRedirectUrl
         val token = SharedPreferencesHelper(context = this).getData("token")
-        println("Connection ID: $connectionId")
         if (connectionId != null) {
             val config = QuilttConnectorReconnectConfiguration(
                 connectorId = connectorId,
@@ -37,7 +36,6 @@ class QuilttConnectorActivity : ComponentActivity() {
                 QuilttConnectContent(config = config, token = token!!)
             }
         }
-
     }
 }
 
@@ -49,22 +47,18 @@ fun QuilttConnectContent(config: QuilttConnectorConnectConfiguration, token: Str
     val connectorWebView = quilttConnector.connect(
         config = config,
         onExitSuccess = { metadata ->
-            println("Exit success!")
-            println("Metadata: $metadata")
             if (context is Activity) {
                 context.finish()
             }
         },
         onExitAbort = { metadata ->
-            println("Exit abort!")
-            println("Metadata: $metadata")
+            // TODO: Handle abort
             if (context is Activity) {
                 context.finish()
             }
         },
         onExitError = { metadata ->
-            println("Exit error!")
-            println("Metadata: $metadata")
+            // TODO: Handle error
             if (context is Activity) {
                 context.finish()
             }
@@ -80,22 +74,18 @@ fun QuilttReconnectContent(config: QuilttConnectorReconnectConfiguration, token:
     val connectorWebView = quilttConnector.reconnect(
         config = config,
         onExitSuccess = { metadata ->
-            println("Exit success!")
-            println("Metadata: $metadata")
             if (context is Activity) {
                 context.finish()
             }
         },
         onExitAbort = { metadata ->
-            println("Exit abort!")
-            println("Metadata: $metadata")
+            // TODO: Handle abort
             if (context is Activity) {
                 context.finish()
             }
         },
         onExitError = { metadata ->
-            println("Exit error!")
-            println("Metadata: $metadata")
+            // TODO: Handle error
             if (context is Activity) {
                 context.finish()
             }

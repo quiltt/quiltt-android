@@ -13,7 +13,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
@@ -21,7 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.ViewModelProvider
-import app.quiltt.connector.AuthResponse
+import app.quiltt.connector.PingResponse
 import app.quiltt.connector.QuilttAuthApi
 import app.quiltt.connector.QuilttConnector
 import app.quiltt.connector.QuilttConnectorConnectConfiguration
@@ -65,7 +64,7 @@ class MainViewModel(private val token:String?) : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {// run background task here
             if (token != null) {
                 val result = QuilttAuthApi(clientId = null).ping(token = token)
-                if (result is AuthResponse.SessionResponse) {
+                if (result is PingResponse.SessionResponse) {
                     _isValidToken.value = true
                     _loading.value = false
                 } else {
