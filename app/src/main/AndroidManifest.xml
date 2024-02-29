@@ -18,6 +18,9 @@
             android:name=".QuilttConnectorActivity"
             android:launchMode="singleTop"
             android:exported="true">
+            <tools:validation testUrl="https://www.quiltthub.com/mobile/reconnect" />
+            <tools:validation testUrl="https://www.quiltthub.com/mobile/connect" />
+
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
 
@@ -27,6 +30,29 @@
                 <data
                     android:scheme="quilttandroidexample"
                     android:host="open.kotlin.app" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="https" />
+                <data android:host="www.quiltthub.com" />
+                <data android:pathPattern="/mobile/connect" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="https"
+                    android:host="www.quiltthub.com"
+                    android:pathPattern="/mobile/reconnect" />
+                <data android:host="www.quiltthub.com" />
+                <data android:pathPattern="/mobile/reconnect" />
             </intent-filter>
         </activity>
         <activity

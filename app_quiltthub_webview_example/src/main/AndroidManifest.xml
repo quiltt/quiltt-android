@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/quiltt_app_icon"
+        android:label="@string/app_name"
+        android:roundIcon="@drawable/quiltt_app_icon"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.App.First">
+        <activity
+            android:name=".QuilttHubActivity"
+            android:exported="true"
+            android:label="@string/title_activity_quiltt_hub"
+            android:theme="@style/Theme.QuilttConnector"></activity>
+        <activity
+            android:name=".QuilttConnectorActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.QuilttConnector">
+            <tools:validation testUrl="https://quiltt.app/mobile/hub/connect" />
+
+        </activity>
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.App.First">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>
