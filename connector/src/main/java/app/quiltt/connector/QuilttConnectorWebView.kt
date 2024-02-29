@@ -76,6 +76,7 @@ class QuilttConnectorWebViewClient(private val params: QuilttConnectorWebViewCli
        val connectorId = params.config.connectorId
        val profileId = urlComponents.getQueryParameter("profileId")
        val connectionId = urlComponents.getQueryParameter("connectionId")
+       val token = urlComponents.getQueryParameter("token")
        println("handleQuilttEvent $url")
        when (url.host) {
            "Load" -> {
@@ -83,19 +84,23 @@ class QuilttConnectorWebViewClient(private val params: QuilttConnectorWebViewCli
            }
            "ExitAbort" -> {
                clearLocalStorage()
-               params.onExit?.invoke(ConnectorSDKEventType.ExitAbort, ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = null))
-               params.onExitAbort?.invoke(ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = null))
+               params.onExit?.invoke(ConnectorSDKEventType.ExitAbort, ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = null, token = null))
+               params.onExitAbort?.invoke(ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = null, token = null))
            }
            "ExitError" -> {
                clearLocalStorage()
-               params.onExit?.invoke(ConnectorSDKEventType.ExitError, ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = null))
-               params.onExitError?.invoke(ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = null))
+               params.onExit?.invoke(ConnectorSDKEventType.ExitError, ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = null, token = null))
+               params.onExitError?.invoke(ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = null, token = null))
            }
            "ExitSuccess" -> {
                clearLocalStorage()
                if (connectionId != null) {
-                   params.onExit?.invoke(ConnectorSDKEventType.ExitSuccess, ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = connectionId))
-                   params.onExitSuccess?.invoke(ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = connectionId))
+                   params.onExit?.invoke(ConnectorSDKEventType.ExitSuccess, ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = connectionId, token = null))
+                   params.onExitSuccess?.invoke(ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = connectionId, token = null))
+               }
+               if (token != null) {
+                     params.onExit?.invoke(ConnectorSDKEventType.ExitSuccess, ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = profileId, connectionId = null, token = token))
+                     params.onExitSuccess?.invoke(ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = profileId, connectionId = null, token = token))
                }
            }
            "Authenticate" -> {
