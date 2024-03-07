@@ -117,6 +117,7 @@ class QuilttConnectorWebViewClient(private val params: QuilttConnectorWebViewCli
         val tokenString = params.token ?: "null"
         val connectorId = params.config.connectorId
         val connectionId = params.config.connectionId ?: "null"
+        val institution = params.config.institution ?: "null"
 
         val script = """
             const options = {
@@ -125,6 +126,7 @@ class QuilttConnectorWebViewClient(private val params: QuilttConnectorWebViewCli
             token: '$tokenString',
             connectorId: '$connectorId',
             connectionId: '$connectionId',
+            institution: '$institution',
             };
             const compactedOptions = Object.keys(options).reduce((acc, key) => {
             if (options[key] !== 'null') {
