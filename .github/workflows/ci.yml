@@ -14,7 +14,7 @@ jobs:
         with:
           # Read https://whichjdk.com/#tldr to understand the difference between different distributions
           # MacOS might be running openjdk 17 (https://whichjdk.com/#apple-silicon) but we want to run the latest LTS on Linux
-          distribution: temurin
+          distribution: corretto
           java-version: 21
 
       # Setup Ruby
