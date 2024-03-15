@@ -39,7 +39,7 @@ class QuilttConnectorWebView(context: Context) : WebView(context) {
             onExitError = onExitError
         )
         this.webViewClient = QuilttConnectorWebViewClient(clientParams)
-        val url = "https://${config.connectorId}.quiltt.app/?mode=webview&oauth_redirect_url=${config.oauthRedirectUrl}&sdk=kotlin"
+        val url = "https://${config.connectorId}.quiltt.app/?mode=webview&oauth_redirect_url=${config.oauthRedirectUrl}&agent=android-${quilttSdkVersion}"
         this.loadUrl(url)
     }
 }
