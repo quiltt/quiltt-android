@@ -51,7 +51,7 @@ publishing {
             pom {
                 name.set("Quiltt Connector")
                 description.set("Quiltt Connector Android SDK")
-                url.set("https://www.quiltt.dev/guides/connector/android")
+                url.set("https://www.quiltt.dev/connector/sdk/android")
 
                 organization {
                     name.set("Quiltt, Inc.")
