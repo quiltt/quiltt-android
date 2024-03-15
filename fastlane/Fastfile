@@ -69,7 +69,7 @@ platform :android do
     new_version = bump_version_file(:patch)
     build_example_app
     # # test_example_app
-    release(:patch)
+    release(new_version)
   end
 
   desc 'Release minor version'
@@ -77,7 +77,7 @@ platform :android do
     new_version = bump_version_file(:minor)
     build_example_app
     # test_example_app
-    release(:minor)
+    release(new_version)
   end
 
   desc 'Release major version'
@@ -85,7 +85,7 @@ platform :android do
     new_version = bump_version_file(:major)
     build_example_app
     # test_example_app
-    release(:major)
+    release(new_version)
   end
 
   desc 'Build Example App'
