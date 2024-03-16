@@ -5,6 +5,7 @@ default_platform :android
 
 REPO_NAME = 'quiltt/quiltt-android'.freeze
 GITHUB_TOKEN = ENV['GITHUB_TOKEN']
+GRADLE_FILE_PATH = '../connector/build.gradle.kts'
 SDK_VERSION_FILE_PATH = "../connector/src/main/java/app/quiltt/connector/QuilttSdkVersion.kt"
 
 def release(new_version)
@@ -17,7 +18,7 @@ def release(new_version)
     name: new_version.to_s,
     tag_name: new_version.to_s,
     is_generate_release_notes: true,
-    commitish: 'main'
+    commitish: new_branch
   )
 
   create_pull_request(
@@ -44,12 +45,12 @@ def bump_version_file(level)
 end
 
 def generate_new_connector_build_gradle(new_version)
-  connector_build_gradle = File.read('../connector/build.gradle.kts')
+  connector_build_gradle = File.read(GRADLE_FILE_PATH)
   new_connector_build_gradle = connector_build_gradle.gsub(
     /version = "(\d+.\d+.\d+)"/,
     "version = \"#{new_version}\""
   )
-  File.write('../connector/build.gradle.kts', new_connector_build_gradle)
+  File.write(GRADLE_FILE_PATH, new_connector_build_gradle)
 end
 
 def generate_release_version_file(version)
@@ -58,6 +59,7 @@ end
 
 def push_to_git_remote(branch)
   sh("git checkout -b #{branch}")
+  sh("git add #{GRADLE_FILE_PATH}")
   sh("git add #{SDK_VERSION_FILE_PATH}")
   sh('git commit -m "Bump version"')
   sh("git push origin #{branch}")
