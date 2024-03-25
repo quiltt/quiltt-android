@@ -80,3 +80,5 @@ class QuilttConnectorActivity : AppCompatActivity() {
     }
 }
 ```
+
+This project is tested with BrowserStack
