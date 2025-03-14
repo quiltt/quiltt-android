@@ -1,3 +1,7 @@
+package app.quiltt.connector
+
+import android.net.Uri
+
 object UrlUtils {
     /**
      * Checks if a string appears to be already URL encoded
