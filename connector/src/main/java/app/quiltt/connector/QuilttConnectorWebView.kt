@@ -39,7 +39,27 @@ class QuilttConnectorWebView(context: Context) : WebView(context) {
             onExitError = onExitError
         )
         this.webViewClient = QuilttConnectorWebViewClient(clientParams)
-        val url = "https://${config.connectorId}.quiltt.app/?mode=webview&oauth_redirect_url=${config.oauthRedirectUrl}&agent=android-${quilttSdkVersion}"
+        
+        // Apply smart URL encoding to the redirect URL
+        val safeOAuthRedirectUrl = UrlUtils.smartEncodeURIComponent(config.oauthRedirectUrl)
+        
+        // Build the URL using Uri.Builder to properly handle parameter encoding
+        val urlBuilder = Uri.Builder()
+            .scheme("https")
+            .authority("${config.connectorId}.quiltt.app")
+            .appendQueryParameter("mode", "webview")
+            .appendQueryParameter("agent", "android-${quilttSdkVersion}")
+        
+        // Handle the OAuth redirect URL with special care
+        if (UrlUtils.isEncoded(safeOAuthRedirectUrl)) {
+            // If already encoded, decode once to prevent double encoding
+            val decodedOnce = Uri.decode(safeOAuthRedirectUrl)
+            urlBuilder.appendQueryParameter("oauth_redirect_url", decodedOnce)
+        } else {
+            urlBuilder.appendQueryParameter("oauth_redirect_url", safeOAuthRedirectUrl)
+        }
+        
+        val url = urlBuilder.build().toString()
         this.loadUrl(url)
     }
 }
@@ -71,47 +91,47 @@ class QuilttConnectorWebViewClient(private val params: QuilttConnectorWebViewCli
         return true
     }
 
-   private fun handleQuilttEvent(url: Uri) {
-       val urlComponents = Uri.parse(url.toString())
-       val connectorId = params.config.connectorId
-       val profileId = urlComponents.getQueryParameter("profileId")
-       val connectionId = urlComponents.getQueryParameter("connectionId")
-       println("handleQuilttEvent $url")
-       when (url.host) {
-           "Load" -> {
-               initInjectJavaScript()
-           }
-           "ExitAbort" -> {
-               clearLocalStorage()
-               params.onExit?.invoke(ConnectorSDKEventType.ExitAbort, ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = null))
-               params.onExitAbort?.invoke(ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = null))
-           }
-           "ExitError" -> {
-               clearLocalStorage()
-               params.onExit?.invoke(ConnectorSDKEventType.ExitError, ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = null))
-               params.onExitError?.invoke(ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = null))
-           }
-           "ExitSuccess" -> {
-               clearLocalStorage()
-               if (connectionId != null) {
-                   params.onExit?.invoke(ConnectorSDKEventType.ExitSuccess, ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = connectionId))
-                   params.onExitSuccess?.invoke(ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = connectionId))
-               }
-           }
-           "Authenticate" -> {
-               println("Authenticate $profileId")
-           }
-           "OauthRequested" -> {
-               val oauthUrlString = urlComponents.getQueryParameter("oauthUrl")
-               if (oauthUrlString != null && URLUtil.isHttpsUrl(oauthUrlString)) {
-                   handleOAuthUrl(Uri.parse(oauthUrlString))
-               }
-           }
-           else -> {
-               println("unhandled event $url")
-           }
-       }
-   }
+    private fun handleQuilttEvent(url: Uri) {
+        val urlComponents = Uri.parse(url.toString())
+        val connectorId = params.config.connectorId
+        val profileId = urlComponents.getQueryParameter("profileId")
+        val connectionId = urlComponents.getQueryParameter("connectionId")
+        println("handleQuilttEvent $url")
+        when (url.host) {
+            "Load" -> {
+                initInjectJavaScript()
+            }
+            "ExitAbort" -> {
+                clearLocalStorage()
+                params.onExit?.invoke(ConnectorSDKEventType.ExitAbort, ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = null))
+                params.onExitAbort?.invoke(ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = null))
+            }
+            "ExitError" -> {
+                clearLocalStorage()
+                params.onExit?.invoke(ConnectorSDKEventType.ExitError, ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = null))
+                params.onExitError?.invoke(ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = null))
+            }
+            "ExitSuccess" -> {
+                clearLocalStorage()
+                if (connectionId != null) {
+                    params.onExit?.invoke(ConnectorSDKEventType.ExitSuccess, ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = connectionId))
+                    params.onExitSuccess?.invoke(ConnectorSDKCallbackMetadata(connectorId = connectorId, profileId = null, connectionId = connectionId))
+                }
+            }
+            "Authenticate" -> {
+                println("Authenticate $profileId")
+            }
+            "OauthRequested" -> {
+                val oauthUrlString = urlComponents.getQueryParameter("oauthUrl")
+                if (oauthUrlString != null && URLUtil.isHttpsUrl(oauthUrlString)) {
+                    handleOAuthUrl(Uri.parse(oauthUrlString))
+                }
+            }
+            else -> {
+                println("unhandled event $url")
+            }
+        }
+    }
 
     private fun initInjectJavaScript() {
         val tokenString = params.token ?: "null"
@@ -145,34 +165,40 @@ class QuilttConnectorWebViewClient(private val params: QuilttConnectorWebViewCli
         params.webView.evaluateJavascript(script, null)
     }
 
-   private val allowedListUrl = listOf(
-       "quiltt.app",
-       "quiltt.dev",
-       "moneydesktop.com",
-       "cdn.plaid.com",
-   )
+    private val allowedListUrl = listOf(
+        "quiltt.app",
+        "quiltt.dev",
+        "moneydesktop.com",
+        "cdn.plaid.com",
+    )
 
-   private fun shouldRender(url: Uri): Boolean {
-       if (isQuilttEvent(url)) {
-           return false
-       }
-       for (allowedUrl in allowedListUrl) {
-           if (url.toString().contains(allowedUrl)) {
-               return true
-           }
-       }
-       return false
-   }
+    private fun shouldRender(url: Uri): Boolean {
+        if (isQuilttEvent(url)) {
+            return false
+        }
+        for (allowedUrl in allowedListUrl) {
+            if (url.toString().contains(allowedUrl)) {
+                return true
+            }
+        }
+        return false
+    }
 
-   private fun handleOAuthUrl(oauthUrl: Uri) {
-       if (!URLUtil.isHttpsUrl(oauthUrl.toString())) {
-           println("handleOAuthUrl - Skipping non https url - $oauthUrl")
-           return
-       }
-       // Open the URL in the system browser
-       val intent = Intent(Intent.ACTION_VIEW, oauthUrl)
-       params.context.startActivity(intent)
-   }
+    private fun handleOAuthUrl(oauthUrl: Uri) {
+        val urlString = oauthUrl.toString()
+        
+        if (!URLUtil.isHttpsUrl(urlString)) {
+            println("handleOAuthUrl - Skipping non https url - $oauthUrl")
+            return
+        }
+        
+        // Normalize the URL encoding to prevent double-encoding issues
+        val normalizedUrl = UrlUtils.normalizeUrlEncoding(urlString)
+        
+        // Open the URL in the system browser
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(normalizedUrl))
+        params.context.startActivity(intent)
+    }
 
     private fun isQuilttEvent(url: Uri): Boolean {
         return url.toString().startsWith("quilttconnector://")
