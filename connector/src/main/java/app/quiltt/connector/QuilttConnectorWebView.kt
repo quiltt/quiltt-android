@@ -170,6 +170,7 @@ class QuilttConnectorWebViewClient(private val params: QuilttConnectorWebViewCli
         "quiltt.dev",
         "moneydesktop.com",
         "cdn.plaid.com",
+        "finicity.com",
     )
 
     private fun shouldRender(url: Uri): Boolean {
