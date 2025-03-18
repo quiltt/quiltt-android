@@ -121,10 +121,28 @@ class QuilttConnectorWebViewClient(private val params: QuilttConnectorWebViewCli
             "Authenticate" -> {
                 println("Authenticate $profileId")
             }
-            "OauthRequested" -> {
-                val oauthUrlString = urlComponents.getQueryParameter("oauthUrl")
-                if (oauthUrlString != null && URLUtil.isHttpsUrl(oauthUrlString)) {
-                    handleOAuthUrl(Uri.parse(oauthUrlString))
+            "Navigate" -> {
+                val navigateUrlString = urlComponents.getQueryParameter("url")
+                if (navigateUrlString != null) {
+                    // Handle potential encoding issues
+                    if (UrlUtils.isEncoded(navigateUrlString)) {
+                        try {
+                            // If encoded, decode once to prevent double-encoding
+                            val decodedUrl = Uri.decode(navigateUrlString)
+                            if (URLUtil.isHttpsUrl(decodedUrl)) {
+                                handleOAuthUrl(Uri.parse(decodedUrl))
+                            }
+                        } catch (error: Exception) {
+                            println("Navigate URL decoding failed, using original")
+                            if (URLUtil.isHttpsUrl(navigateUrlString)) {
+                                handleOAuthUrl(Uri.parse(navigateUrlString))
+                            }
+                        }
+                    } else if (URLUtil.isHttpsUrl(navigateUrlString)) {
+                        handleOAuthUrl(Uri.parse(navigateUrlString))
+                    }
+                } else {
+                    println("Navigate URL missing from request")
                 }
             }
             else -> {
