@@ -8,8 +8,8 @@ class QuilttConnector(context: Context) {
 
     fun authenticate(token: String) {
         this.token = token
-//        TODO: Implement this
-//        webView.authenticate(token)
+        // TODO: Implement this
+        // webView.authenticate(token)
     }
 
     fun connect(
