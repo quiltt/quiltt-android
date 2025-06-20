@@ -11,10 +11,13 @@ object UrlUtils {
         val hasEncodedChars = "%[0-9A-F]{2}".toRegex(RegexOption.IGNORE_CASE).containsMatchIn(str)
         
         // Check if double encoding has occurred (e.g., %253A instead of %3A)
-        val hasDoubleEncoding = "%25[0-9A-F]{2}".toRegex(RegexOption.IGNORE_CASE).containsMatchIn(str)
+        // val hasDoubleEncoding = "%25[0-9A-F]{2}".toRegex(RegexOption.IGNORE_CASE).containsMatchIn(str)
         
         // If we have encoded chars but no double encoding, it's likely properly encoded
-        return hasEncodedChars && !hasDoubleEncoding
+        return hasEncodedChars 
+        
+        // TODO: Decide what to do with double encoding
+        // && !hasDoubleEncoding
     }
     
     /**
