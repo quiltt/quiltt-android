@@ -127,19 +127,26 @@ class QuilttConnectorWebViewClient(private val params: QuilttConnectorWebViewCli
                     // Handle potential encoding issues
                     if (UrlUtils.isEncoded(navigateUrlString)) {
                         try {
-                            // If encoded, decode once to prevent double-encoding
                             val decodedUrl = Uri.decode(navigateUrlString)
-                            if (URLUtil.isHttpsUrl(decodedUrl)) {
-                                handleOAuthUrl(Uri.parse(decodedUrl))
-                            }
+                            val navigateUri = Uri.parse(decodedUrl)
+                            handleOAuthUrl(navigateUri)
                         } catch (error: Exception) {
-                            println("Navigate URL decoding failed, using original")
-                            if (URLUtil.isHttpsUrl(navigateUrlString)) {
-                                handleOAuthUrl(Uri.parse(navigateUrlString))
+                            println("Failed to create URI from decoded string")
+                            // Fallback to original string
+                            try {
+                                val navigateUri = Uri.parse(navigateUrlString)
+                                handleOAuthUrl(navigateUri)
+                            } catch (fallbackError: Exception) {
+                                println("Failed to create URI from original string: $navigateUrlString")
                             }
                         }
-                    } else if (URLUtil.isHttpsUrl(navigateUrlString)) {
-                        handleOAuthUrl(Uri.parse(navigateUrlString))
+                    } else {
+                        try {
+                            val navigateUri = Uri.parse(navigateUrlString)
+                            handleOAuthUrl(navigateUri)
+                        } catch (error: Exception) {
+                            println("Failed to create URI from string: $navigateUrlString")
+                        }
                     }
                 } else {
                     println("Navigate URL missing from request")
@@ -206,7 +213,7 @@ class QuilttConnectorWebViewClient(private val params: QuilttConnectorWebViewCli
     private fun handleOAuthUrl(oauthUrl: Uri) {
         val urlString = oauthUrl.toString()
         
-        if (!URLUtil.isHttpsUrl(urlString)) {
+        if (!urlString.startsWith("https://")) {
             println("handleOAuthUrl - Skipping non https url - $oauthUrl")
             return
         }
@@ -215,8 +222,19 @@ class QuilttConnectorWebViewClient(private val params: QuilttConnectorWebViewCli
         val normalizedUrl = UrlUtils.normalizeUrlEncoding(urlString)
         
         // Open the URL in the system browser
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(normalizedUrl))
-        params.context.startActivity(intent)
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(normalizedUrl))
+            params.context.startActivity(intent)
+        } catch (error: Exception) {
+            println("Failed to open URL in browser: $normalizedUrl, error: ${error.message}")
+            // Fallback to original URL if normalization creates an invalid URL
+            try {
+                val intent = Intent(Intent.ACTION_VIEW, oauthUrl)
+                params.context.startActivity(intent)
+            } catch (fallbackError: Exception) {
+                println("Failed to open original URL in browser: $oauthUrl, error: ${fallbackError.message}")
+            }
+        }
     }
 
     private fun isQuilttEvent(url: Uri): Boolean {
