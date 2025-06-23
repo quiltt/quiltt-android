@@ -229,9 +229,10 @@ class QuilttConnectorWebViewClient(private val params: QuilttConnectorWebViewCli
     private fun handleOAuthUrl(oauthUrl: Uri) {
         val urlString = oauthUrl.toString()
         
-        // FIXED: Use same logic as iOS - check if string starts with https://
-        // instead of using URLUtil.isHttpsUrl() which fails on encoded URLs
-        if (!urlString.startsWith("https://")) {
+        // Check if URL uses HTTPS scheme (case-insensitive)
+        // Note: We use string checking instead of Uri.scheme because encoded URLs 
+        // like "https%3A%2F%2F..." would have scheme=null after Uri.parse()
+        if (!urlString.startsWith("https://", ignoreCase = true)) {
             Log.w(TAG, "Skipping non-HTTPS URL: $oauthUrl")
             return
         }
