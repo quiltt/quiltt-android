@@ -3,6 +3,7 @@ package app.quiltt.connector
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.webkit.URLUtil
@@ -77,9 +78,14 @@ data class QuilttConnectorWebViewClientParams(
 )
 
 class QuilttConnectorWebViewClient(private val params: QuilttConnectorWebViewClientParams) : WebViewClient() {
+    
+    companion object {
+        private const val TAG = "QuilttConnectorWebView"
+    }
+    
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
         val url = request.url
-        println(url.toString())
+        Log.d(TAG, "Intercepted URL: $url")
         if (isQuilttEvent(url)) {
             handleQuilttEvent(url)
             return true
@@ -96,7 +102,7 @@ class QuilttConnectorWebViewClient(private val params: QuilttConnectorWebViewCli
         val connectorId = params.config.connectorId
         val profileId = urlComponents.getQueryParameter("profileId")
         val connectionId = urlComponents.getQueryParameter("connectionId")
-        println("handleQuilttEvent $url")
+        Log.d(TAG, "handleQuilttEvent: $url")
         when (url.host) {
             "Load" -> {
                 initInjectJavaScript()
@@ -119,42 +125,52 @@ class QuilttConnectorWebViewClient(private val params: QuilttConnectorWebViewCli
                 }
             }
             "Authenticate" -> {
-                println("Authenticate $profileId")
+                Log.d(TAG, "Authenticate: $profileId")
             }
             "Navigate" -> {
                 val navigateUrlString = urlComponents.getQueryParameter("url")
                 if (navigateUrlString != null) {
-                    // Handle potential encoding issues
-                    if (UrlUtils.isEncoded(navigateUrlString)) {
-                        try {
-                            val decodedUrl = Uri.decode(navigateUrlString)
-                            val navigateUri = Uri.parse(decodedUrl)
-                            handleOAuthUrl(navigateUri)
-                        } catch (error: Exception) {
-                            println("Failed to create URI from decoded string")
-                            // Fallback to original string
-                            try {
-                                val navigateUri = Uri.parse(navigateUrlString)
-                                handleOAuthUrl(navigateUri)
-                            } catch (fallbackError: Exception) {
-                                println("Failed to create URI from original string: $navigateUrlString")
-                            }
-                        }
-                    } else {
-                        try {
-                            val navigateUri = Uri.parse(navigateUrlString)
-                            handleOAuthUrl(navigateUri)
-                        } catch (error: Exception) {
-                            println("Failed to create URI from string: $navigateUrlString")
-                        }
-                    }
+                    handleNavigateUrl(navigateUrlString)
                 } else {
-                    println("Navigate URL missing from request")
+                    Log.w(TAG, "Navigate URL missing from request")
                 }
             }
             else -> {
-                println("unhandled event $url")
+                Log.w(TAG, "Unhandled event: $url")
             }
+        }
+    }
+    
+    /**
+     * Helper function to handle URL parsing and OAuth redirect for Navigate events
+     */
+    private fun handleNavigateUrl(navigateUrlString: String) {
+        // Handle potential encoding issues - Match iOS logic exactly
+        if (UrlUtils.isEncoded(navigateUrlString)) {
+            val decodedUrl = Uri.decode(navigateUrlString)
+            parseAndHandleOAuthUrl(decodedUrl) { 
+                Log.w(TAG, "Failed to parse decoded URL, trying original")
+                parseAndHandleOAuthUrl(navigateUrlString) {
+                    Log.e(TAG, "Failed to parse both decoded and original URL: $navigateUrlString")
+                }
+            }
+        } else {
+            parseAndHandleOAuthUrl(navigateUrlString) {
+                Log.e(TAG, "Failed to parse URL: $navigateUrlString")
+            }
+        }
+    }
+    
+    /**
+     * Helper function to parse URL string and handle OAuth redirect with error callback
+     */
+    private fun parseAndHandleOAuthUrl(urlString: String, onError: () -> Unit) {
+        try {
+            val navigateUri = Uri.parse(urlString)
+            handleOAuthUrl(navigateUri)
+        } catch (error: Exception) {
+            Log.e(TAG, "URL parsing failed", error)
+            onError()
         }
     }
 
@@ -213,8 +229,10 @@ class QuilttConnectorWebViewClient(private val params: QuilttConnectorWebViewCli
     private fun handleOAuthUrl(oauthUrl: Uri) {
         val urlString = oauthUrl.toString()
         
+        // FIXED: Use same logic as iOS - check if string starts with https://
+        // instead of using URLUtil.isHttpsUrl() which fails on encoded URLs
         if (!urlString.startsWith("https://")) {
-            println("handleOAuthUrl - Skipping non https url - $oauthUrl")
+            Log.w(TAG, "Skipping non-HTTPS URL: $oauthUrl")
             return
         }
         
@@ -226,13 +244,13 @@ class QuilttConnectorWebViewClient(private val params: QuilttConnectorWebViewCli
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(normalizedUrl))
             params.context.startActivity(intent)
         } catch (error: Exception) {
-            println("Failed to open URL in browser: $normalizedUrl, error: ${error.message}")
+            Log.e(TAG, "Failed to open normalized URL in browser: $normalizedUrl", error)
             // Fallback to original URL if normalization creates an invalid URL
             try {
                 val intent = Intent(Intent.ACTION_VIEW, oauthUrl)
                 params.context.startActivity(intent)
             } catch (fallbackError: Exception) {
-                println("Failed to open original URL in browser: $oauthUrl, error: ${fallbackError.message}")
+                Log.e(TAG, "Failed to open original URL in browser: $oauthUrl", fallbackError)
             }
         }
     }
