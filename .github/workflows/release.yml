@@ -1,31 +1,160 @@
-name: Publish
+name: Automated Release and Publish
 
 on:
-  release:
-    types: [released]
+  pull_request:
+    types: [closed]
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
 
 jobs:
-  publish:
-    name: Release build and publish
+  release:
+    name: Release and Publish
     runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    
     steps:
-      - name: Check out code
+      - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check for release labels
+        id: check-labels
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = context.payload.pull_request.labels.map(label => label.name);
+            console.log('PR labels:', labels);
+            
+            let releaseType = null;
+            let shouldRelease = false;
+            
+            if (labels.includes('release:major')) {
+              releaseType = 'major';
+              shouldRelease = true;
+            } else if (labels.includes('release:minor')) {
+              releaseType = 'minor';
+              shouldRelease = true;
+            } else if (labels.includes('release:patch')) {
+              releaseType = 'patch';
+              shouldRelease = true;
+            }
+            
+            core.setOutput('should_release', shouldRelease.toString());
+            core.setOutput('release_type', releaseType || '');
+            core.setOutput('pr_title', context.payload.pull_request.title);
+            core.setOutput('pr_number', context.payload.pull_request.number.toString());
+            
+            if (shouldRelease) {
+              console.log(`🚀 Release triggered: ${releaseType}`);
+            } else {
+              console.log('ℹ️ No release labels found, skipping release');
+            }
+
       - name: Set up JDK 21
+        if: steps.check-labels.outputs.should_release == 'true'
         uses: actions/setup-java@v4
         with:
-          # Read https://whichjdk.com/#tldr to understand the difference between different distributions
-          # MacOS might be running openjdk 17 (https://whichjdk.com/#apple-silicon) but we want to run the latest LTS on Linux
-          distribution: corretto
-          java-version: 21
+          distribution: 'corretto'
+          java-version: '21'
 
-      # Generate AAR and POM files
-      - name: Release build
-        run: ./gradlew assembleRelease
+      - name: Setup Ruby
+        if: steps.check-labels.outputs.should_release == 'true'
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3.0'
+          bundler-cache: true
 
-      # Upload, closes and releases the repository
-      - name: Publish to MavenCentral
-        run: ./gradlew publishConnectorPublicationToSonatypeRepository --max-workers 1 closeAndReleaseSonatypeStagingRepository
+      - name: Install dependencies
+        if: steps.check-labels.outputs.should_release == 'true'
+        run: bundle install
+
+      - name: Configure Git
+        if: steps.check-labels.outputs.should_release == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Get current version
+        if: steps.check-labels.outputs.should_release == 'true'
+        id: current-version
+        run: |
+          CURRENT_VERSION=$(grep 'version = ' connector/build.gradle.kts | sed 's/.*version = "\(.*\)".*/\1/')
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT_VERSION"
+
+      - name: Calculate new version
+        if: steps.check-labels.outputs.should_release == 'true'
+        id: new-version
+        run: |
+          # Use Ruby semantic gem for version bumping
+          bundle exec ruby -e "
+            require 'semantic'
+            current = Semantic::Version.new('${{ steps.current-version.outputs.current_version }}')
+            new_version = current.increment!(:${{ steps.check-labels.outputs.release_type }})
+            puts new_version
+            File.write('NEW_VERSION', new_version.to_s)
+          "
+          
+          NEW_VERSION=$(cat NEW_VERSION)
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "🎯 Releasing version: $NEW_VERSION"
+
+      - name: Update version files
+        if: steps.check-labels.outputs.should_release == 'true'
+        run: |
+          # Update connector/build.gradle.kts
+          sed -i 's/version = ".*"/version = "${{ steps.new-version.outputs.new_version }}"/' connector/build.gradle.kts
+          
+          # Update QuilttSdkVersion.kt
+          echo "package app.quiltt.connector" > connector/src/main/java/app/quiltt/connector/QuilttSdkVersion.kt
+          echo "val quilttSdkVersion = \"${{ steps.new-version.outputs.new_version }}\"" >> connector/src/main/java/app/quiltt/connector/QuilttSdkVersion.kt
+
+      - name: Setup Gradle
+        if: steps.check-labels.outputs.should_release == 'true'
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build and validate Android library
+        if: steps.check-labels.outputs.should_release == 'true'
+        run: |
+          ./gradlew clean build
+          ./gradlew connector:assembleRelease
+
+      - name: Run tests
+        if: steps.check-labels.outputs.should_release == 'true'
+        run: |
+          ./gradlew connector:test
+          ./gradlew connector:lint
+
+      - name: Build example apps
+        if: steps.check-labels.outputs.should_release == 'true'
+        run: |
+          bundle exec fastlane android build_example_app
+
+      - name: Commit version updates
+        if: steps.check-labels.outputs.should_release == 'true'
+        run: |
+          git add connector/build.gradle.kts
+          git add connector/src/main/java/app/quiltt/connector/QuilttSdkVersion.kt
+          git commit -m "chore: release v${{ steps.new-version.outputs.new_version }}"
+          git push origin main
+
+      - name: Create Git tag
+        if: steps.check-labels.outputs.should_release == 'true'
+        run: |
+          git tag "v${{ steps.new-version.outputs.new_version }}"
+          git push origin "v${{ steps.new-version.outputs.new_version }}"
+
+      - name: Publish to Maven Central
+        if: steps.check-labels.outputs.should_release == 'true'
+        run: |
+          ./gradlew publishConnectorPublicationToSonatypeRepository --max-workers 1 closeAndReleaseSonatypeStagingRepository
         env:
           OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
@@ -33,3 +162,82 @@ jobs:
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SONATYPE_STAGING_PROFILE_ID: ${{ secrets.SONATYPE_STAGING_PROFILE_ID }}
+
+      - name: Create GitHub Release
+        if: steps.check-labels.outputs.should_release == 'true'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "v${{ steps.new-version.outputs.new_version }}"
+          name: "Release v${{ steps.new-version.outputs.new_version }}"
+          body: |
+            ## 🚀 Release v${{ steps.new-version.outputs.new_version }}
+            
+            **Release Type:** ${{ steps.check-labels.outputs.release_type }}
+            **Triggered by PR:** #${{ steps.check-labels.outputs.pr_number }} - ${{ steps.check-labels.outputs.pr_title }}
+            
+            ### Changes
+            This release was automatically created from the merged pull request.
+            
+            ### Installation
+            
+            **Gradle (Kotlin DSL):**
+            ```kotlin
+            dependencies {
+                implementation("app.quiltt:connector:${{ steps.new-version.outputs.new_version }}")
+            }
+            ```
+            
+            **Gradle (Groovy DSL):**
+            ```gradle
+            dependencies {
+                implementation 'app.quiltt:connector:${{ steps.new-version.outputs.new_version }}'
+            }
+            ```
+            
+            **Maven:**
+            ```xml
+            <dependency>
+                <groupId>app.quiltt</groupId>
+                <artifactId>connector</artifactId>
+                <version>${{ steps.new-version.outputs.new_version }}</version>
+            </dependency>
+            ```
+            
+            ### Requirements
+            - Android API Level 26+
+            - Kotlin 1.8+ or Java 8+
+            - Android Gradle Plugin 7.0+
+            
+            ### Maven Central
+            The package will be available on [Maven Central](https://search.maven.org/artifact/app.quiltt/connector) within a few hours.
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment on PR with release info
+        if: steps.check-labels.outputs.should_release == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: ${{ steps.check-labels.outputs.pr_number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 **Release Complete!**
+              
+              This PR triggered a **${{ steps.check-labels.outputs.release_type }}** release:
+              - **Version:** v${{ steps.new-version.outputs.new_version }}
+              - **Maven Central:** Available at \`app.quiltt:connector:${{ steps.new-version.outputs.new_version }}\`
+              - **GitHub Release:** [v${{ steps.new-version.outputs.new_version }}](${context.payload.repository.html_url}/releases/tag/v${{ steps.new-version.outputs.new_version }})
+              
+              ✅ Package is now available for installation!
+              
+              **Installation:**
+              \`\`\`kotlin
+              dependencies {
+                  implementation("app.quiltt:connector:${{ steps.new-version.outputs.new_version }}")
+              }
+              \`\`\`
+              
+              **Note:** It may take a few hours for the package to appear on Maven Central.`
+            });
