@@ -1,5 +1,8 @@
 # Quiltt Android SDK
 
+> **Warning**
+> This repository is a public archive. The latest code for this package can be found at: [https://github.com/quiltt/quiltt-sdks/tree/main/packages/android](https://github.com/quiltt/quiltt-sdks/tree/main/packages/android)
+
 [![Maven Central](https://img.shields.io/maven-central/v/app.quiltt/connector)](https://search.maven.org/artifact/app.quiltt/connector)
 [![API Level](https://img.shields.io/badge/API-26%2B-brightgreen.svg)](https://android-arsenal.com/api?level=26)
 
